@@ -27,7 +27,11 @@ module.exports = appInfo => {
     password: 'Taylor2237221210',
     database: 'pagination_test',
   };
+  // 配置egg-view-ejs
 
+  config.view = {
+    mapping: {'.html': 'ejs'} //左边写成.html后缀，会自动渲染.html文件
+  };
   // add your user config here
   const userConfig = {
     // myAppName: 'egg',

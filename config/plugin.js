@@ -14,3 +14,8 @@ exports.sequelize = {
   enable: true,
   package: 'egg-sequelize',
 };
+// ejs配置
+exports.ejs = {
+  enable: true,
+  package: 'egg-view-ejs',
+};

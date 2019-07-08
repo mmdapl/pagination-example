@@ -10,6 +10,7 @@
     "egg": "^2.15.1",
     "egg-scripts": "^2.11.0",
     "egg-sequelize": "^5.1.0",
+    "egg-view-ejs": "^2.0.0",
     "mysql2": "^1.6.5"
   },
   "devDependencies": {

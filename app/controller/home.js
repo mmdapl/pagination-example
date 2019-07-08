@@ -6,10 +6,14 @@
  */
 
 const Controller = require('egg').Controller;
+
 class HomeController extends Controller {
   async index() {
-    const { ctx } = this;
-    ctx.body = 'hello, B站的朋友';
+    //this.ctx.body = 'hello, B站的朋友';
+    //定向跳转
+    //this.ctx.body=0;
+    await this.ctx.redirect('index.html')
+    
   }
 }
 

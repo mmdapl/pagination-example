@@ -105,6 +105,38 @@ class StudentController extends Controller {
     });
     this.ctx.body=result
   }
+
+  // 两表联合查询,查询全部，自定义sql查询语句
+  async queryAllOne(){
+    //定义学生成绩信息的总记录数,左连接；
+    const queryCountSql="SELECT count(tbl_stu_info.stu_id) as 'count' from tbl_stu_info LEFT JOIN tbl_score_info on tbl_stu_info.stu_id=tbl_score_info.stu_id ";
+    // 定义分页查询的SQL
+    const queryPaginationSql="SELECT tbl_stu_info.stu_id,tbl_stu_info.stu_name,tbl_score_info.subject_name,tbl_score_info.subject_score "+
+                              "from tbl_stu_info LEFT JOIN tbl_score_info on tbl_stu_info.stu_id=tbl_score_info.stu_id order by tbl_stu_info.stu_name desc "
+    //获取两表联合起来的总记录数
+    const countResult= await this.app.model.query(queryCountSql);
+    //获取某一页展示的数据
+    const result=await this.app.model.query(queryPaginationSql);
+    console.log(countResult);
+    console.log(result)      
+    //判断结构
+    if(countResult.length!=0&&result.length!=0){
+        this.ctx.body={
+            code:0,
+            message:'自定义SQL查询的全部数据',
+            data:{
+                total:countResult[0][0].count,
+                rows:result[0],
+            }
+        }
+    }else{
+      this.ctx.body={
+          code:1,
+          message:'无法通过自定义SQL查询全部数据',
+          data:''
+      }
+    }
+  }
 }
 
 module.exports = StudentController;

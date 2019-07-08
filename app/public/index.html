@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>分页展示</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <!--定义表格  -->
+            <table class="table table-bordered text-center table-hover" id="my_table">
+                <thead style="background: #86a897">
+                    <th class="text-center">学生序号</th>
+                    <th class="text-center">学生姓名</th>
+                    <th class="text-center">考试科目</th>
+                    <th class="text-center">考试成绩</th>
+                </thead>
+                <tr>
+                    <td>21</td>
+                    <td>1212</td>
+                    <td>121</td>
+                    <td>1211</td>
+                </tr>
+            </table>
+            <div class="text-center" id="page">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li>
+                            <a href="#" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <li><a href="#">1</a></li>
+                        <li><a href="#">2</a></li>
+                        <li><a href="#">3</a></li>
+                        <li><a href="#">4</a></li>
+                        <li><a href="#">5</a></li>
+                        <li>
+                            <a href="#" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+</body>
+<!-- 引入jquery -->
+<script src="bootstrap/js/jquery.min.js"></script>
+<script>
+    //获取成绩分页信息
+    $.get("/query_true_one", {
+        offsetIndex: 0,
+        limitIndex: 6
+    }, function (result) {
+        console.log(result);
+        if (result.code == 0) {
+            //存在输入
+            let tableHtml='<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
+            // 获取当前页查询到的数据
+            const pageSize=result.data.rows.length;
+            //通过循环来追加html
+            for(var i=0; i<pageSize;i++){
+                tableHtml +='<tr><td>'+(i+1)+'</td><td>'+result.data.rows[i].stu_name+'</td><td>'+result.data.rows[i].subject_name+'</td><td>'+result.data.rows[i].subject_score+'</td></tr>'
+            }
+            //循环完成
+            tableHtml +='</table>'
+            console.log(tableHtml)
+            //追加到表中
+            $('#my_table').html(tableHtml);
+            //通过循环注入分页
+            let paginageHtml='<nav aria-label="Page navigation"><ul class="pagination">'
+            //设置分页栏展示的数据量
+        
+        }
+    })
+</script>
+
+</html>
