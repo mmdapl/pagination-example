@@ -34,7 +34,7 @@
                     <td>1211</td>
                 </tr> -->
             </table>
-            <div class="text-center" id="page">
+            <div class="text-right" id="page">
                 <!-- <nav aria-label="Page navigation">
                     <ul class="pagination">
                         <li>
@@ -58,9 +58,13 @@
             </div>
 
             <hr>
-            <h4 class="text-center">利用Bootstrap-table实现分页</h4>
+            <h4 class="text-center">利用Bootstrap-table实现后端分页【服务器分页】</h4>
             <hr>
-            <table id="bootstrap_table"></table>
+            <table id="bootstrap_table_after"></table>
+            <hr>
+            <h4 class="text-center">利用Bootstrap-table实现前端分页【数据量大时不推荐】</h4>
+            <hr>
+            <table id="bootstrap_table_front"></table>
         </div>
     </div>
 </body>
@@ -136,14 +140,14 @@
             }
         })
     });
-    //Bootstrap-table的初始化；
-    $("#bootstrap-table").bootstrapTable({
-        url: '/query_true_one',
+    //Bootstrap-table 后端分页初始化；
+    $("#bootstrap_table_after").bootstrapTable({
+        url: '../query_true_two',
         method: 'get',
         striped: true,//设置为 true 会有隔行变色效果
         undefinedText: "空",//当数据为 undefined 时显示的字符
         pagination: true, //分页
-        // paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+        paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
         showToggle: "true",//是否显示 切换试图（table/card）按钮
         showColumns: "true",//是否显示 内容列下拉框
         pageNumber: 1,//如果设置了分页，首页页码
@@ -158,8 +162,16 @@
         sidePagination: "server", //服务端处理分页
         queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
             return {//这里的params是table提供的
-                offsetIndex: 2,//从数据库第几条记录开始
-                limitIndex:  10//找多少条
+                offsetIndex: params.offset,//从数据库第几条记录开始
+                limitIndex:  params.limit//找多少条
+            };
+        },
+        // 当借口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+        responseHandler: function(res) {
+            console.log(res)
+            return {
+                "total": res.data.total,//总页数
+                "rows": res.data.rows   //数据
             };
         },
         idField: "userId",//指定主键列
@@ -167,7 +179,72 @@
             {
                 title: '学生序号',//表的列名
                 field: 'stu_id',//json数据中rows数组中的属性名
-                align: 'center'//水平居中
+                align: 'center',//水平居中
+                formatter:function(value,row,index){
+                    return index+1;
+                }
+            },
+            {
+                title: '学生姓名',
+                field: 'stu_name',
+                align: 'center'
+            },
+            {
+                title: '考试科目',
+                field: 'subject_name',
+                align: 'center'
+            },
+            {
+                title: '考试成绩',
+                field: 'subject_score',
+                align: 'center'
+            }]
+    });
+    
+
+    //Bootstrap-table前端分页初始化（即：一次性查询出搜索的数据）；
+    $("#bootstrap_table_front").bootstrapTable({
+        url: '../query_false_one',
+        method: 'get',
+        striped: true,//设置为 true 会有隔行变色效果
+        undefinedText: "空",//当数据为 undefined 时显示的字符
+        pagination: true, //分页
+        paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+        showToggle: "true",//是否显示 切换试图（table/card）按钮
+        showColumns: "true",//是否显示 内容列下拉框
+        pageNumber: 1,//如果设置了分页，首页页码
+        // showPaginationSwitch:true,//是否显示 数据条数选择框
+        pageSize: 5,//如果设置了分页，页面数据条数
+        pageList: [5, 10, 20, 30],	//如果设置了分页，设置可供选择的页面数据条数。设置为All 则显示所有记录。
+        paginationPreText: '‹',//指定分页条中上一页按钮的图标或文字,这里是<
+        paginationNextText: '›',//指定分页条中下一页按钮的图标或文字,这里是>
+        // singleSelect: false,//设置True 将禁止多选
+        search: false, //显示搜索框
+        data_local: "zh-US",//表格汉化
+        sidePagination: "client", //客户端处理分页
+        // 一次性查询出所有，不需要传参
+        // queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+        //     return {//这里的params是table提供的
+        //         offsetIndex: params.offset,//从数据库第几条记录开始
+        //         limitIndex:  params.limit//找多少条
+        //     };
+        // },
+        // 当借口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+        responseHandler: function(res) {
+            console.log(res)
+            return {
+                "total": res.data.total,//总页数
+                "rows": res.data.rows   //数据
+            };
+        },
+        columns: [
+            {
+                title: '学生序号',//表的列名
+                field: 'stu_id',//json数据中rows数组中的属性名
+                align: 'center',//水平居中
+                formatter:function(value,row,index){
+                    return index+1;
+                }
             },
             {
                 title: '学生姓名',
@@ -186,6 +263,39 @@
             }]
     });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     //抽离成分页方法
     function paginationMethod(currentPage, limit) {
         //处理当前页
