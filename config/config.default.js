@@ -20,11 +20,12 @@ module.exports = appInfo => {
 
   // 配置mysql数据库
   config.sequelize = {
+    // 注意修改数据库配置
     dialect: 'mysql',
-    host: '142vip.cn',
+    host: '127.0.0.1',
     port: 3306,
-    username: 'Taylor',
-    password: 'Taylor2237221210',
+    username: 'root',
+    password: 'root',
     database: 'pagination_test',
   };
   // 配置egg-view-ejs

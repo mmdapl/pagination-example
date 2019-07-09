@@ -376,5 +376,749 @@ config.view={
 
 ![1562579035468](assets/1562579035468.png)
 
-12.前端页面采用Bootstrap的简单样式
+12.前端页面采用Bootstrap的简单样式，展示不同的分页效果
 
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>分页展示</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!-- bootstrap-table控件css样式 -->
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-table.min.css">
+    <style>
+        /* 添加分页表头颜色 */
+        thead{
+            background: #86a897
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row" style="margin-top: 40px;">
+            <!--定义表格  -->
+            <button class="btn btn-sm btn-success" id="addStu">批量添加学生信息</button>
+            <button class="btn btn-sm btn-info" id="addScore">批量添加成绩信息</button>
+            <hr>
+            <h4 class="text-center">自定义js实现，递归实现分页【功能有点瑕疵】</h4>
+            <hr>
+            <table class="table table-bordered text-center table-hover" id="my_table">
+                <!-- <thead style="background: #86a897">
+                    <th class="text-center">学生序号</th>
+                    <th class="text-center">学生姓名</th>
+                    <th class="text-center">考试科目</th>
+                    <th class="text-center">考试成绩</th>
+                </thead>
+                <tr>
+                    <td>21</td>
+                    <td>1212</td>
+                    <td>121</td>
+                    <td>1211</td>
+                </tr> -->
+            </table>
+            <div class="text-right" id="page">
+                <!-- <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <li>
+                            <a href="#" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <li><a href="#">1</a></li>
+                        <li><a href="#">2</a></li>
+                        <li><a href="#">3</a></li>
+                        <li><a href="#">4</a></li>
+                        <li><a href="#">5</a></li>
+                        <li>
+                            <a href="#" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav> -->
+            </div>
+            <hr>
+            <h4 class="text-center">利用Bootstrap-table实现后端分页【服务器分页】</h4>
+            <hr>
+            <table id="bootstrap_table_after"></table>
+            <hr>
+            <h4 class="text-center">利用Bootstrap-table实现前端分页【数据量大时不推荐】</h4>
+            <hr>
+            <table id="bootstrap_table_front"></table>
+            <!-- 个人信息显示 -->
+            <div class="text-center" style="margin-top: 20px">
+                <p>版权所有@2019.7 
+                    <a href="https://space.bilibili.com/350937042">Rong姐姐好可爱</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+<!-- 引入jquery -->
+<script src="bootstrap/js/jquery.min.js"></script>
+<!-- 引入bootstrap的js文件 -->
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="bootstrap/js/bootstrap-table.min.js"></script>
+<!-- Latest compiled and minified Locales -->
+<script src="bootstrap/js/bootstrap-table-zh-CN.min.js"></script>
+<script>
+<html>
+```
+
+![1562665653456](assets/1562665653456.png)
+
+13.完成自定义sql分页接口，处理好接口数据格式，并且测试接口数据；
+
+```javascript
+// 两表联合查询，方法一：自定义sql查询语句
+    async queryPaginationOne() {
+        //获取查询的起始位置，和一页显示的数据；
+        let {
+            offsetIndex,
+            limitIndex
+        } = this.ctx.query;
+        // 处理参数
+        if (offsetIndex < 0) {
+            offsetIndex = 0
+        }
+        //定义学生成绩信息的总记录数,左连接；
+        const queryCountSql = "SELECT count(tbl_stu_info.stu_id) as 'count' from tbl_stu_info LEFT JOIN tbl_score_info on tbl_stu_info.stu_id=tbl_score_info.stu_id ";
+        // 定义分页查询的SQL
+        const queryPaginationSql = "SELECT tbl_stu_info.stu_id,tbl_stu_info.stu_name,tbl_score_info.subject_name,tbl_score_info.subject_score " +
+            "from tbl_stu_info LEFT JOIN tbl_score_info on tbl_stu_info.stu_id=tbl_score_info.stu_id order by tbl_stu_info.stu_name desc limit " +
+            offsetIndex + " , " + limitIndex;
+        //获取两表联合起来的总记录数
+        const countResult = await this.app.model.query(queryCountSql);
+        //获取某一页展示的数据
+        const result = await this.app.model.query(queryPaginationSql);
+        console.log(countResult);
+        console.log(result)
+        //判断结构
+        if (countResult.length != 0 && result.length != 0) {
+            this.ctx.body = {
+                code: 0,
+                message: '自定义SQL查询的分页数据',
+                data: {
+                    total: countResult[0][0].count,
+                    rows: result[0],
+                }
+            }
+        } else {
+            this.ctx.body = {
+                code: 1,
+                message: '无法通过自定义SQL查询分页数据',
+                data: ''
+            }
+        }
+    }
+```
+
+**前端自定义js分页函数封装**
+
+```javascript
+    //抽离成分页方法
+    function paginationMethod(currentPage, limit) {
+        //处理当前页
+        //获取成绩分页信息
+        $.get("/query_true_one", {
+            offsetIndex: (currentPage-1)*limit,
+            limitIndex: limit
+        }, function (result) {
+            console.log(result);
+            if (result.code == 0) {
+                //存在输入
+                let tableHtml =
+                    '<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
+                // 获取当前页查询到的数据
+                const pageSize = result.data.rows.length;
+                //通过循环来追加html
+                for (var i = 0; i < pageSize; i++) {
+                    tableHtml += '<tr><td>' + (i + 1) + '</td><td>' + result.data.rows[i].stu_name + '</td><td>' +
+                        result.data.rows[i].subject_name + '</td><td>' + result.data.rows[i].subject_score +
+                        '</td></tr>'
+                }
+                //循环完成
+                tableHtml += '</table>'
+                console.log(tableHtml)
+                //追加到表中
+                $('#my_table').html(tableHtml);
+                //通过循环注入分页
+                let paginationHtml = '<nav aria-label="Page navigation"><ul class="pagination">'
+                // 获取总的数据量
+                const allCount = result.data.total;
+                //总共分页的数目
+                const pageCount = allCount % limit == 0 ? allCount / limit : Math.ceil(allCount /limit);
+                console.log(pageCount)
+                //定义当前页面
+                //var currentPage = 1;
+                // 当前页需要小于总页数,防止越界查询
+                currentPage = currentPage <= pageCount ? currentPage : 1;
+
+                if (pageCount == 1) {
+                    paginationHtml += '<li class="active"><a href="javascript:paginationMethod(1,'+limit+')">' + 1 + '</a></li>';
+                } else if (pageCount < 5) {
+                    paginationHtml +=
+                        '<li id="pre"><a href="javascript:paginationMethod('+(currentPage-1)+','+limit+')" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+                        '</a></li>'
+                    //少于5也
+                    for (var i = 0; i < pageCount; i++) {
+                        if (currentPage == (i + 1)) {
+                            //高亮显示
+                            paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
+                        } else {
+                            //
+                            paginationHtml += '<li><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
+                        }
+                    }
+                    paginationHtml +=
+                        '<li id="next"><a href="javascript:paginationMethod('+(currentPage+1)+','+limit+')" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+                        '</a></li>'
+                } else {
+                    //总页数大于5页,即显示5页;
+                    paginationHtml +=
+                        '<li id="pre"><a href="javascript:paginationMethod('+(currentPage-1)+','+limit+')" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+                        '</a></li>'
+                    if (currentPage < 5) {
+                        for (var i = 0; i < 5; i++) {
+                            if (currentPage == (i + 1)) {
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
+                            } else {
+                                //
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
+                            }
+                        }
+                    } else if (currentPage < (pageCount - 4)&&currentPage>=5) {
+                        //在中间显示5条
+                        //随机生成1-5的整数
+                        const randomInt = Math.floor(Math.random() * (1 - 5) + 5);
+                        //写个5次循环
+                        for (var i = currentPage - randomInt; i < (currentPage - randomInt) + 5; i++) {
+                            if (currentPage == i) {
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i)+','+limit+')">' + (i) + '</a></li>';
+                            } else {
+                                //
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i)+','+limit+')">' + (i) + '</a></li>';
+                            }
+                        }
+                    } else {
+                        //currentPage在最后5页的范畴里
+                        for (var i = pageCount - 4; i <= pageCount; i++) {
+                            if (currentPage == i) {
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i)+','+limit+')">' + i + '</a></li>';
+                            } else {
+                                //
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i)+','+limit+')">' + i + '</a></li>';
+                            }
+                        }
+                    }
+                    //添加尾页
+                    paginationHtml +=
+                        '<li id="next"><a href="javascript:paginationMethod('+(currentPage+1)+','+limit+')" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+                        '</a></li>'
+                }
+
+                //添加 标签结束标记
+                paginationHtml += ' </ul></nav>'
+                //将分页的html添加到div中
+                $('#page').html(paginationHtml)
+                //在首页的 时候,限制上一页点击
+                if (currentPage == 1) {
+                    $('#pre').addClass('disabled')
+                } else {
+                    $('#pre').removeClass('disabled')
+                }
+                //当在尾页的时候,限制下一页点击
+                if (currentPage == pageCount) {
+                    $('#next').addClass('disabled')
+                } else {
+                    $('#next').removeClass('disabled')
+                }
+            }
+        })
+    }
+```
+
+14.利用Egg-sequelize模块来实现联表查询，提供分页接口，优化查询速度
+
+```javascript
+// 两表联合查询 方法二：用sequelize中提供的联合查询，已封装
+    async queryPaginationTwo() {
+        //获取查询的起始位置，和一页显示的数据；
+        let {
+            offsetIndex,
+            limitIndex
+        } = this.ctx.query;
+        // 处理参数
+        offsetIndex = parseInt(offsetIndex) || 1;
+        limitIndex = parseInt(limitIndex) || 5;
+
+        //查询问题，待完成;(已解决)
+        //association:this.ctx.model.TblScoreInfo.belongsTo(this.ctx.model.TblScoreInfo
+        // 应该是student表调用findAndCountAll()方法，与score表连接，所以，在belongsTo()中，应该处理好score model的主外键关联
+
+        const result = await this.ctx.model.TblStudentInfo.findAndCountAll({
+            order: [
+                ['stu_name', 'desc']
+            ],
+            limit: limitIndex,
+            offset: offsetIndex,
+            include: [{
+                association: this.ctx.model.TblScoreInfo.belongsTo(this.ctx.model.TblScoreInfo, {
+                    foreignKey: 'stu_id',
+                    targetKey: 'stu_id'
+                }),
+                // 设置结果列字段
+                attributes: [
+                    ['subject_name', 'subject_name'],
+                    ['subject_score', 'subject_score'],
+                ]
+            }],
+            // 设置结果列字段
+            attributes: [
+                ['stu_id', 'stu_id'],
+                ['stu_name', 'stu_name'],
+            ]
+        });
+        if (result != undefined) {
+            //查询成功
+            this.ctx.body = {
+                code: 0,
+                message: 'sequelize联表查询分页数据',
+                data: {
+                    total: result.count,
+                    rows: result.rows
+                }
+            }
+        } else {
+            //查询失败
+            this.ctx.body = {
+                code: 1,
+                message: 'sequelize联表查询分页数据出错',
+                data: ''
+            }
+        }
+
+    }
+```
+
+**同时前端采用Bootstrap-table来实现后端分页**
+
+![1562666161914](assets/1562666161914.png)
+
+**Bootstrap-table初始化脚本**
+
+```javascript
+$("#bootstrap_table_after").bootstrapTable({
+        url: '../query_true_two',
+        method: 'get',
+        striped: true,//设置为 true 会有隔行变色效果
+        undefinedText: "空",//当数据为 undefined 时显示的字符
+        pagination: true, //分页
+        paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+        showToggle: "true",//是否显示 切换试图（table/card）按钮
+        showColumns: "true",//是否显示 内容列下拉框
+        pageNumber: 1,//如果设置了分页，首页页码
+        // showPaginationSwitch:true,//是否显示 数据条数选择框
+        pageSize: 5,//如果设置了分页，页面数据条数
+        pageList: [5, 10, 20, 40],	//如果设置了分页，设置可供选择的页面数据条数。设置为All 则显示所有记录。
+        paginationPreText: '‹',//指定分页条中上一页按钮的图标或文字,这里是<
+        paginationNextText: '›',//指定分页条中下一页按钮的图标或文字,这里是>
+        // singleSelect: false,//设置True 将禁止多选
+        search: false, //显示搜索框
+        data_local: "zh-US",//表格汉化
+        sidePagination: "server", //服务端处理分页
+        queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+            return {//这里的params是table提供的
+                offsetIndex: params.offset,//从数据库第几条记录开始
+                limitIndex:  params.limit//找多少条
+            };
+        },
+        // 当借口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+        responseHandler: function(res) {
+            console.log(res)
+            return {
+                "total": res.data.total,//总页数
+                "rows": res.data.rows   //数据
+            };
+        },
+        idField: "userId",//指定主键列
+        columns: [
+            {
+                title: '学生序号',//表的列名
+                field: 'stu_id',//json数据中rows数组中的属性名
+                align: 'center',//水平居中
+                formatter:function(value,row,index){
+                    return index+1;
+                }
+            },
+            {
+                title: '学生姓名',
+                field: 'stu_name',
+                align: 'center'
+            },
+            {
+                title: '考试科目',
+                field: 'score.subject_name',
+                align: 'center'
+            },
+            {
+                title: '考试成绩',
+                field: 'score.subject_score',
+                align: 'center'
+            }]
+    });
+```
+
+15.同样利用sequelize，实现联表查询，一次性查询所有的数据（不推荐），大数据量下前端分页的弊端
+
+```javascript
+ // 两表联合查询,查询全部，自定义sql查询语句(可用于Bootstrap-table前端分页)
+    async queryAllOne() {
+        // 直接关联表来查询
+        const result = await this.ctx.model.TblStudentInfo.findAndCountAll({
+            order: [
+                ['stu_name', 'desc']
+            ],
+            // 查询所有
+            //  limit:-1,
+            //  offset:1,
+            include: [{
+                association: this.ctx.model.TblScoreInfo.belongsTo(this.ctx.model.TblScoreInfo, {
+                    foreignKey: 'stu_id',
+                    targetKey: 'stu_id',
+                }),
+                // 设置结果列字段
+                attributes: [
+                    ['subject_name', 'subject_name'],
+                    ['subject_score', 'subject_score'],
+                ]
+            }],
+            // 设置结果列字段
+            attributes: [
+                ['stu_id', 'stu_id'],
+                ['stu_name', 'stu_name'],
+            ]
+        });
+        //判断结果
+        if (result != undefined) {
+            this.ctx.body = {
+                code: 0,
+                message: '自定义SQL查询的全部数据',
+                data: {
+                    total: result.count,
+                    rows: result.rows
+                }
+            }
+        } else {
+            this.ctx.body = {
+                code: 1,
+                message: '无法通过自定义SQL查询全部数据',
+                data: ''
+            }
+        }
+    }
+```
+
+**前端分页Bootstrap-table的初始化（跟后端分页差不多）**
+
+```javascript
+//Bootstrap-table前端分页初始化（即：一次性查询出搜索的数据）；
+    $("#bootstrap_table_front").bootstrapTable({
+        url: '../query_false_one',
+        method: 'get',
+        striped: true,//设置为 true 会有隔行变色效果
+        undefinedText: "空",//当数据为 undefined 时显示的字符
+        pagination: true, //分页
+        paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+        showToggle: "true",//是否显示 切换试图（table/card）按钮
+        showColumns: "true",//是否显示 内容列下拉框
+        pageNumber: 1,//如果设置了分页，首页页码
+        // showPaginationSwitch:true,//是否显示 数据条数选择框
+        pageSize: 5,//如果设置了分页，页面数据条数
+        pageList: [5, 10, 20, 30],	//如果设置了分页，设置可供选择的页面数据条数。设置为All 则显示所有记录。
+        paginationPreText: '‹',//指定分页条中上一页按钮的图标或文字,这里是<
+        paginationNextText: '›',//指定分页条中下一页按钮的图标或文字,这里是>
+        // singleSelect: false,//设置True 将禁止多选
+        search: false, //显示搜索框
+        data_local: "zh-US",//表格汉化
+        sidePagination: "client", //客户端处理分页
+        // 一次性查询出所有，不需要传参
+        // queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+        //     return {//这里的params是table提供的
+        //         offsetIndex: params.offset,//从数据库第几条记录开始
+        //         limitIndex:  params.limit//找多少条
+        //     };
+        // },
+        // 当借口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+        responseHandler: function(res) {
+            console.log(res)
+            return {
+                "total": res.data.total,//总页数
+                "rows": res.data.rows   //数据
+            };
+        },
+        columns: [
+            {
+                title: '学生序号',//表的列名
+                field: 'stu_id',//json数据中rows数组中的属性名
+                align: 'center',//水平居中
+                formatter:function(value,row,index){
+                    return index+1;
+                }
+            },
+            {
+                title: '学生姓名',
+                field: 'stu_name',
+                align: 'center'
+            },
+            {
+                title: '考试科目',
+                field: 'score.subject_name',
+                align: 'center'
+            },
+            {
+                title: '考试成绩',
+                field: 'score.subject_score',
+                align: 'center'
+            }]
+    });
+```
+
+**使用bootstrap-table总结**
+
+1. 由于Bootstrap-table是封装好的js脚本，所有在利用其进行分页的时候，必然会对后台接口的数据格式有要求；当遇到项目中统一了接口要求，但却不符合Bootstrap-table的接口要求规范的时候，bootstrap-table提供了结构格式方法；
+
+   ```javascript
+   // 当接口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+   responseHandler: function(res) {
+       // 自己后台接口数据，res
+       console.log(res) 
+       // 格式化
+       return {
+           "total": res.data.total,//总页数
+           "rows": res.data.rows   //数据
+       };
+   },
+   ```
+
+2. 在服务端进行分页的时候，需要动态的改变查询的变量offset和limit,也是通过回调函数的方式；
+
+   ```javascript
+   // Bootstrap-table初始化配置
+   queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+       return {//这里的params是table提供的
+           offsetIndex: params.offset,//从数据库第几条记录开始
+           limitIndex:  params.limit//找多少条
+       };
+   },
+   ```
+
+3. 常用后端分页Bootstrap-table设置
+
+   ```javascript
+   $("#bootstrap_table_after").bootstrapTable({
+       url: '../query_true_two',
+       method: 'get',
+       striped: true,//设置为 true 会有隔行变色效果
+       undefinedText: "空",//当数据为 undefined 时显示的字符
+       pagination: true, //分页
+       paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+       showToggle: "true",//是否显示 切换试图（table/card）按钮
+       showColumns: "true",//是否显示 内容列下拉框
+       pageNumber: 1,//如果设置了分页，首页页码
+       // showPaginationSwitch:true,//是否显示 数据条数选择框
+       pageSize: 5,//如果设置了分页，页面数据条数
+       pageList: [5, 10, 20, 40],	//如果设置了分页，设置可供选择的页面数据条数。设置为All 则显示所有记录。
+       paginationPreText: '‹',//指定分页条中上一页按钮的图标或文字,这里是<
+       paginationNextText: '›',//指定分页条中下一页按钮的图标或文字,这里是>
+       // singleSelect: false,//设置True 将禁止多选
+       search: false, //显示搜索框
+       data_local: "zh-US",//表格汉化
+       sidePagination: "server", //服务端处理分页
+       queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+           return {//这里的params是table提供的
+               offsetIndex: params.offset,//从数据库第几条记录开始
+               limitIndex:  params.limit//找多少条
+           };
+       },
+       // 当借口数据与Bootstrap-table数据格式不一样的时候，可以调用responseHandler() 回调方法格式化数据
+       responseHandler: function(res) {
+           console.log(res)
+           return {
+               "total": res.data.total,//总页数
+               "rows": res.data.rows   //数据
+           };
+       },
+       idField: "userId",//指定主键列
+       columns: [
+           //表格数据
+       });
+   ```
+
+   16.完成学生信息添加接口，可以用来添加大量数据，模拟分页性能；
+
+   ```javascript
+   async insertStu() {
+       // 获取待插入的学生信息，利用get请求
+       const stuName = this.ctx.query.student_name;
+       console.log(stuName);
+   
+       // 获取当前时间的13位时间戳，用作学生表中的学生主键信息；
+       const stuId = (new Date()).getTime();
+       // 利用sequelize插入
+       const student = await this.ctx.model.TblStudentInfo.create({
+           stu_id: stuId,
+           stu_name: stuName,
+       });
+       // 通过student的返回结果来判断是否插入成功
+       if (student.stu_id != undefined) {
+           this.ctx.body = {
+               code: 0,
+               message: '学生信息插入成功',
+               data: student
+           }
+       } else {
+           //插入失败
+           this.ctx.body = {
+               code: 1,
+               message: '学生信息插入失败',
+               data: ''
+           }
+       }
+   }
+   ```
+
+   同时，前端演示界面提供“批量添加学生信息按钮”，并监听，采用异步的方式以延迟200ms的方式批量添加学还是学生信息，确保信息不重复；
+
+   ```javascript
+   //添加学生信息按钮监听
+   $("#addStu").click(function () {
+       //利用循环添加，每次添加10个学生用户，模拟数据
+       for (var i = 0; i < 10; i++) {  
+           //随机生成1-100的随机数
+           const preNum=Math.floor(Math.random()*(1 - 100) + 100)
+           const nextNum=Math.floor(Math.random()*(1 - 100) + 100)
+           //随机生成学生名字
+           let stuName=preNum+'---Bilibili---'+nextNum
+           //每隔200ms向后台请求一次，避免出现并发错误
+           setTimeout(() => {
+               //向后台请求
+               $.get("/insertStu", {
+                   student_name:stuName
+               }, function (data) {
+                   console.log(data);
+               })
+           }, 200);
+       }
+   });
+   ```
+
+   17.根据学生信息的主键ID，在成绩表中添加成绩信息，保证成绩表和学生表信息的主外键约束，方便分页的时候联表查询；
+
+   ```javascript
+   // 成绩信息的插入
+   async insertScore(){
+       // 获取待插入的成绩信息，利用get请求
+       const {subjectName,subjectScore,stuId}=this.ctx.query;
+       // 获取当前时间的13位时间戳，用作成绩表中的成绩主键信息；
+       const id=(new Date()).getTime();
+       // 利用sequelize插入
+       //另外一种方式：采用捕获异常的方式来判断是否插入成功，
+       try {
+           const score=await this.ctx.model.TblScoreInfo.create({
+               id:id,
+               subject_name:subjectName,
+               subject_score:subjectScore,
+               stu_id:stuId
+           });
+   
+           // 通过student的返回结果来判断是否插入成功
+           if(student.stu_id != undefined){
+               this.ctx.body={
+                   code:0,
+                   message:'学生信息插入成功',
+                   data:student
+               }
+           }else{
+               //插入失败
+               this.ctx.body={
+                   code:1,
+                   message:'学生信息插入失败',
+                   data:''
+               }
+           }
+       } catch (error) {
+           //如果出现插入异常，也会导致插入失败，即捕获抛出信息
+           //插入失败
+           this.ctx.body={
+               code:1,
+               message:'学生信息插入失败',
+               data:error
+           }
+       }
+   }
+   ```
+
+   同时，在页面上也添加“批量添加成绩信息”的按钮，完成对按钮的监听，保证对成绩信息与学生信息的关联，方便后面测试分页；
+
+   ```javascript
+   //添加批量写入成绩信息的按钮监听；
+   $('#addScore').click(function(){
+       //先从接口获取学生表中学生的id主键，这是为了在添加成绩信息的时候，可以和成绩对上，即：学生表中的学生id主键是成绩表的外键约束；
+       $.get('/queryStuId',function(result){
+           console.log(result)
+           //针对每个学生id，模拟添加语文、数学、英语三门成绩
+           const studentNum=result.data.length;
+           for(var i=0;i<studentNum;i++){
+               //对每个学生，循环三次添加，三门成绩
+               for(var j=0;j<3;j++){
+                   // 随机生成一个成绩 80~99
+                   const randomScore=Math.floor(Math.random()*(80-99)+99)
+                   let subjectName;
+                   if(j==0){
+                       subjectName='语文';
+                   }
+                   if(j==1){
+                       subjectName='数学';
+                   }
+                   if(j==2){
+                       subjectName='英语';
+                   }
+                   //当前学生的id
+                   const stuId=result.data[i].stu_id;
+                   //每隔200ms向后台请求一次
+                   setTimeout(() => {
+                       //向后台请求插入
+                       $.get('/insertScore',{
+                           //参数
+                           subjectName:subjectName,
+                           subjectScore:randomScore,
+                           //学号
+                           stuId:stuId
+                       },function(backResult){
+                           console.log("成绩添加结果：");
+                           console.log(backResult);
+                       }) 
+                   }, 200);
+               }
+           }
+       })
+   });
+   ```
+
+   18.整理前后端代码，尽量的将重复的代码抽离出方法，递归调用；同时测试比较三种分页的效果，完成项目，项目的接口路由如下：
+
+   ![1562672149284](assets/1562672149284.png)
+
+   **最后总结：**
+
+   ​		分页是平时开发中常用的，虽然自定义js能够实现基本的分页，但是终究没有封装好的框架控件来的快速和舒适；这里将自己平时对分页的基本实现总结下来，方便日后学习和使用，希望对自己，对他人都有帮助；

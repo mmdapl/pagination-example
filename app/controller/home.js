@@ -13,7 +13,7 @@ class HomeController extends Controller {
     //定向跳转
     //this.ctx.body=0;
     await this.ctx.redirect('index.html')
-    
+
   }
 }
 
