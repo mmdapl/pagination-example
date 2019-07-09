@@ -128,13 +128,16 @@ class StudentController extends Controller {
                 association: this.ctx.model.TblScoreInfo.belongsTo(this.ctx.model.TblScoreInfo, {
                     foreignKey: 'stu_id',
                     targetKey: 'stu_id'
-                })
+                }),
+                // 设置结果列字段
+                attributes: [
+                    ['subject_name', 'subject_name'],
+                    ['subject_score', 'subject_score'],
+                ]
             }],
-            //设置格式
+            // 设置结果列字段
             attributes: [
                 ['stu_id', 'stu_id'],
-                ['subject_name', 'subject_name'],
-                ['subject_score', 'subject_score'],
                 ['stu_name', 'stu_name'],
             ]
         });
@@ -174,11 +177,13 @@ class StudentController extends Controller {
                     foreignKey: 'stu_id',
                     targetKey: 'stu_id',
                 }),
+                // 设置结果列字段
                 attributes: [
                     ['subject_name', 'subject_name'],
-                    ['subject_name', 'subject_score'],
+                    ['subject_score', 'subject_score'],
                 ]
             }],
+            // 设置结果列字段
             attributes: [
                 ['stu_id', 'stu_id'],
                 ['stu_name', 'stu_name'],
@@ -191,10 +196,7 @@ class StudentController extends Controller {
                 message: '自定义SQL查询的全部数据',
                 data: {
                     total: result.count,
-                    rows: {
-                        stu_id:result.rows.stu_id,
-                        stu_name:result.rows.stu_name
-                    }
+                    rows: result.rows
                 }
             }
         } else {
