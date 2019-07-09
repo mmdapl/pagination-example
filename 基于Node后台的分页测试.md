@@ -20,11 +20,11 @@ npm init egg --type=simple
 
 3.基本执行过程（这里是通过VS Code终端来执行cmd指令，原理一样）；
 
-![1562556274385](assets\1562556274385.png)
+![1562556274385](assets/1562556274385.png)
 
 4.基本egg结构如下（只配置基本路由router）：
 
-![1562556321405](assets\1562556321405.png)
+![1562556321405](assets/1562556321405.png)
 
 5.虽然项目项目后台接口比较简单，但是仍然采用MVC的模式
 
@@ -64,7 +64,7 @@ class HomeController extends Controller {
 module.exports = HomeController;
 ```
 
-![1562556949544](assets\1562556949544.png)
+![1562556949544](assets/1562556949544.png)
 
 7.基本的egg开发结构已经构建，完成数据库表的字段的基本定义；
 
@@ -116,7 +116,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 8.分别在app文件夹下面创建好model、controller、view、service(在MVC架构中，可以省略这层)文件夹，构建基础目录
 
-![1562557484479](assets\1562557484479.png)
+![1562557484479](assets/1562557484479.png)
 
 9.利用egg中的sequelize模块来设置好基本的连接池参数和model层中的数据库表的模型，[sequelize API文档](https://eggjs.org/zh-cn/tutorials/sequelize.html)；
 
@@ -139,11 +139,11 @@ config.sequelize = {
 };
 ````
 
-![1562558089948](assets\1562558089948.png)
+![1562558089948](assets/1562558089948.png)
 
 10.演示的Demo中有tbl_score_info(成绩表)、tbl_stu_info(学生信息表)，对应着两个表的model，按照分层的思路，应该有着对应的controller和model（可以生路service的部分）
 
-![1562577850098](assets\1562577850098.png)
+![1562577850098](assets/1562577850098.png)
 
 11.路由接口，定义controller中的基本查询，插入方法
 
@@ -374,7 +374,7 @@ config.view={
 }
 ```
 
-![1562579035468](assets\1562579035468.png)
+![1562579035468](assets/1562579035468.png)
 
 12.前端页面采用Bootstrap的简单样式
 
