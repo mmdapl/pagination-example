@@ -9,6 +9,12 @@
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <!-- bootstrap-table控件css样式 -->
     <link rel="stylesheet" href="bootstrap/css/bootstrap-table.min.css">
+    <style>
+        /* 添加分页表头颜色 */
+        thead{
+            background: #86a897
+        }
+    </style>
 </head>
 
 <body>
@@ -18,7 +24,7 @@
             <button class="btn btn-sm btn-success" id="addStu">批量添加学生信息</button>
             <button class="btn btn-sm btn-info" id="addScore">批量添加成绩信息</button>
             <hr>
-            <h4 class="text-center">自定义js实现，递归实现分页</h4>
+            <h4 class="text-center">自定义js实现，递归实现分页【功能有点瑕疵】</h4>
             <hr>
             <table class="table table-bordered text-center table-hover" id="my_table">
                 <!-- <thead style="background: #86a897">
@@ -54,9 +60,7 @@
                         </li>
                     </ul>
                 </nav> -->
-
             </div>
-
             <hr>
             <h4 class="text-center">利用Bootstrap-table实现后端分页【服务器分页】</h4>
             <hr>
@@ -65,6 +69,12 @@
             <h4 class="text-center">利用Bootstrap-table实现前端分页【数据量大时不推荐】</h4>
             <hr>
             <table id="bootstrap_table_front"></table>
+            <!-- 个人信息显示 -->
+            <div class="text-center" style="margin-top: 20px">
+                <p>版权所有@2019.7 
+                    <a href="https://space.bilibili.com/350937042">Rong姐姐好可爱</a>
+                </p>
+            </div>
         </div>
     </div>
 </body>
@@ -98,6 +108,7 @@
             }, 200);
         }
     });
+    
     //添加批量写入成绩信息的按钮监听；
     $('#addScore').click(function(){
         //先从接口获取学生表中学生的id主键，这是为了在添加成绩信息的时候，可以和成绩对上，即：学生表中的学生id主键是成绩表的外键约束；
@@ -140,6 +151,7 @@
             }
         })
     });
+    
     //Bootstrap-table 后端分页初始化；
     $("#bootstrap_table_after").bootstrapTable({
         url: '../query_true_two',
@@ -263,39 +275,7 @@
             }]
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+  
     //抽离成分页方法
     function paginationMethod(currentPage, limit) {
         //处理当前页
@@ -420,8 +400,8 @@
         })
     }
 
-    //调用方法；
-    paginationMethod(1,6);
+    //调用方法；默认一页显示5条数据
+    paginationMethod(1,5);
     // //获取成绩分页信息
     // $.get("/query_true_one", {
     //     offsetIndex: 0,
