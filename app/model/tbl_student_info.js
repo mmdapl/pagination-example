@@ -11,7 +11,7 @@ module.exports = app => {
   const { BIGINT, STRING } = app.Sequelize;
   // 定义学生模型
   const student = app.model.define('student', {
-    id: {
+    stu_id: {
       type: BIGINT,
       primaryKey: true, // 主键
     },

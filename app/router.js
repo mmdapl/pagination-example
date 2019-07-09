@@ -11,7 +11,9 @@ module.exports = app => {
 
   router.get('/', controller.home.index);
   // 学生信息插入
-  router.get('/insertStu',controller.studentController.insertStu)
+  router.get('/insertStu',controller.studentController.insertStu);
+  // 查询学生表中学生的id序列
+  router.get('/queryStuId',controller.studentController.queryStuID)
   // 成绩信息的插入
   router.get('/insertScore',controller.scoreController.insertScore)
   // 成绩表和学生表联合查询，真分页接口，一页一页的查

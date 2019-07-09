@@ -37,15 +37,39 @@ class StudentController extends Controller {
         }
      }
   }
+  // 单独查询学生表中的学生ID,即：获取所有ID
+  async queryStuID(){
+    // 用sequelize提供的方法，findAll查找
+    const backData= await this.ctx.model.TblStudentInfo.findAll({
+        //只查询id列;
+        attributes:['stu_id']
+    });
+    //判空
+    if(backData!=undefined){
+        //查询出结果
+        this.ctx.body={
+            code:0,
+            message:'查询学生所有的ID信息',
+            data:backData
+        }
+    }else{
+        //查询失败
+        this.ctx.body={
+            code:1,
+            message:'查询学生所有的ID信息',
+            data:''
+        }
+    }
+  }
   // 两表联合查询，方法一：自定义sql查询语句
   async queryPaginationOne(){
       //获取查询的起始位置，和一页显示的数据；
       let {offsetIndex,limitIndex} =this.ctx.query;
       // 处理参数
-      if(!offsetIndex>0){
+      if(offsetIndex<0){
         offsetIndex=0
       }
-      if(!limitIndex<30){
+      if(limitIndex>30){
         limitIndex=30
       }
       //定义学生成绩信息的总记录数,左连接；

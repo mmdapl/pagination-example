@@ -7,14 +7,21 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>分页展示</title>
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!-- bootstrap-table控件css样式 -->
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-table.min.css">
 </head>
 
 <body>
     <div class="container">
-        <div class="row">
+        <div class="row" style="margin-top: 40px;">
             <!--定义表格  -->
+            <button class="btn btn-sm btn-success" id="addStu">批量添加学生信息</button>
+            <button class="btn btn-sm btn-info" id="addScore">批量添加成绩信息</button>
+            <hr>
+            <h4 class="text-center">自定义js实现，递归实现分页</h4>
+            <hr>
             <table class="table table-bordered text-center table-hover" id="my_table">
-                <thead style="background: #86a897">
+                <!-- <thead style="background: #86a897">
                     <th class="text-center">学生序号</th>
                     <th class="text-center">学生姓名</th>
                     <th class="text-center">考试科目</th>
@@ -25,10 +32,10 @@
                     <td>1212</td>
                     <td>121</td>
                     <td>1211</td>
-                </tr>
+                </tr> -->
             </table>
             <div class="text-center" id="page">
-                <nav aria-label="Page navigation">
+                <!-- <nav aria-label="Page navigation">
                     <ul class="pagination">
                         <li>
                             <a href="#" aria-label="Previous">
@@ -46,33 +53,159 @@
                             </a>
                         </li>
                     </ul>
-                </nav>
+                </nav> -->
 
             </div>
+
+            <hr>
+            <h4 class="text-center">利用Bootstrap-table实现分页</h4>
+            <hr>
+            <table id="bootstrap_table"></table>
         </div>
     </div>
 </body>
 <!-- 引入jquery -->
 <script src="bootstrap/js/jquery.min.js"></script>
+<!-- 引入bootstrap的js文件 -->
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="bootstrap/js/bootstrap-table.min.js"></script>
+<!-- Latest compiled and minified Locales -->
+<script src="bootstrap/js/bootstrap-table-zh-CN.min.js"></script>
 <script>
+    //添加学生信息按钮监听
+    $("#addStu").click(function () {
+        //利用循环添加，每次添加10个学生用户，模拟数据
+        
+        for (var i = 0; i < 10; i++) {  
+            //随机生成1-100的随机数
+            const preNum=Math.floor(Math.random()*(1 - 100) + 100)
+            const nextNum=Math.floor(Math.random()*(1 - 100) + 100)
+            //随机生成学生名字
+            let stuName=preNum+'---Bilibili---'+nextNum
+            //每隔200ms向后台请求一次，避免出现并发错误
+            setTimeout(() => {
+                //向后台请求
+                $.get("/insertStu", {
+                    student_name:stuName
+                }, function (data) {
+                    console.log(data);
+                })
+            }, 200);
+        }
+    });
+    //添加批量写入成绩信息的按钮监听；
+    $('#addScore').click(function(){
+        //先从接口获取学生表中学生的id主键，这是为了在添加成绩信息的时候，可以和成绩对上，即：学生表中的学生id主键是成绩表的外键约束；
+        $.get('/queryStuId',function(result){
+            console.log(result)
+            //针对每个学生id，模拟添加语文、数学、英语三门成绩
+            const studentNum=result.data.length;
+            for(var i=0;i<studentNum;i++){
+                //对每个学生，循环三次添加，三门成绩
+                for(var j=0;j<3;j++){
+                    // 随机生成一个成绩 80~99
+                    const randomScore=Math.floor(Math.random()*(80-99)+99)
+                    let subjectName;
+                    if(j==0){
+                        subjectName='语文';
+                    }
+                    if(j==1){
+                        subjectName='数学';
+                    }
+                    if(j==2){
+                        subjectName='英语';
+                    }
+                    //当前学生的id
+                    const stuId=result.data[i].stu_id;
+                    //每隔200ms向后台请求一次
+                    setTimeout(() => {
+                       //向后台请求插入
+                       $.get('/insertScore',{
+                           //参数
+                           subjectName:subjectName,
+                           subjectScore:randomScore,
+                           //学号
+                           stuId:stuId
+                       },function(backResult){
+                         console.log("成绩添加结果：");
+                         console.log(backResult);
+                       }) 
+                    }, 200);
+                }
+            }
+        })
+    });
+    //Bootstrap-table的初始化；
+    $("#bootstrap-table").bootstrapTable({
+        url: '/query_true_one',
+        method: 'get',
+        striped: true,//设置为 true 会有隔行变色效果
+        undefinedText: "空",//当数据为 undefined 时显示的字符
+        pagination: true, //分页
+        // paginationLoop:true,//设置为 true 启用分页条无限循环的功能。
+        showToggle: "true",//是否显示 切换试图（table/card）按钮
+        showColumns: "true",//是否显示 内容列下拉框
+        pageNumber: 1,//如果设置了分页，首页页码
+        // showPaginationSwitch:true,//是否显示 数据条数选择框
+        pageSize: 5,//如果设置了分页，页面数据条数
+        pageList: [5, 10, 20, 40],	//如果设置了分页，设置可供选择的页面数据条数。设置为All 则显示所有记录。
+        paginationPreText: '‹',//指定分页条中上一页按钮的图标或文字,这里是<
+        paginationNextText: '›',//指定分页条中下一页按钮的图标或文字,这里是>
+        // singleSelect: false,//设置True 将禁止多选
+        search: false, //显示搜索框
+        data_local: "zh-US",//表格汉化
+        sidePagination: "server", //服务端处理分页
+        queryParams: function (params) {//自定义参数，这里的参数是传给后台的，我这是是分页用的
+            return {//这里的params是table提供的
+                offsetIndex: 2,//从数据库第几条记录开始
+                limitIndex:  10//找多少条
+            };
+        },
+        idField: "userId",//指定主键列
+        columns: [
+            {
+                title: '学生序号',//表的列名
+                field: 'stu_id',//json数据中rows数组中的属性名
+                align: 'center'//水平居中
+            },
+            {
+                title: '学生姓名',
+                field: 'stu_name',
+                align: 'center'
+            },
+            {
+                title: '考试科目',
+                field: 'subject_name',
+                align: 'center'
+            },
+            {
+                title: '考试成绩',
+                field: 'subject_score',
+                align: 'center'
+            }]
+    });
 
     //抽离成分页方法
-    function paginationMethod(currentPage, offset, limit) {
+    function paginationMethod(currentPage, limit) {
         //处理当前页
         //获取成绩分页信息
         $.get("/query_true_one", {
-            offsetIndex: (currentPage - 1) * limit,//起始位置
+            offsetIndex: (currentPage-1)*limit,
             limitIndex: limit
         }, function (result) {
             console.log(result);
             if (result.code == 0) {
                 //存在输入
-                let tableHtml = '<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
+                let tableHtml =
+                    '<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
                 // 获取当前页查询到的数据
                 const pageSize = result.data.rows.length;
                 //通过循环来追加html
                 for (var i = 0; i < pageSize; i++) {
-                    tableHtml += '<tr><td>' + (i + 1) + '</td><td>' + result.data.rows[i].stu_name + '</td><td>' + result.data.rows[i].subject_name + '</td><td>' + result.data.rows[i].subject_score + '</td></tr>'
+                    tableHtml += '<tr><td>' + (i + 1) + '</td><td>' + result.data.rows[i].stu_name + '</td><td>' +
+                        result.data.rows[i].subject_name + '</td><td>' + result.data.rows[i].subject_score +
+                        '</td></tr>'
                 }
                 //循环完成
                 tableHtml += '</table>'
@@ -80,76 +213,87 @@
                 //追加到表中
                 $('#my_table').html(tableHtml);
                 //通过循环注入分页
-                let paginageHtml = '<nav aria-label="Page navigation"><ul class="pagination">'
+                let paginationHtml = '<nav aria-label="Page navigation"><ul class="pagination">'
                 // 获取总的数据量
-                const allCount = resutl.data.total;
-                //一页展现的数据为 limit
-                //var limitIndex=20;
+                const allCount = result.data.total;
                 //总共分页的数目
-                const pageCount = allCount % limit == 0 ? allCount / limit : Math.ceil(allCount / limit);
+                const pageCount = allCount % limit == 0 ? allCount / limit : Math.ceil(allCount /limit);
+                console.log(pageCount)
+                //定义当前页面
+                //var currentPage = 1;
                 // 当前页需要小于总页数,防止越界查询
                 currentPage = currentPage <= pageCount ? currentPage : 1;
+
                 if (pageCount == 1) {
-                    paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
+                    paginationHtml += '<li class="active"><a href="javascript:paginationMethod(1,'+limit+')">' + 1 + '</a></li>';
                 } else if (pageCount < 5) {
+                    paginationHtml +=
+                        '<li id="pre"><a href="javascript:paginationMethod('+(currentPage-1)+','+limit+')" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+                        '</a></li>'
                     //少于5也
-                    paginageHtml += '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>'
-                        + '</a></li>'
                     for (var i = 0; i < pageCount; i++) {
                         if (currentPage == (i + 1)) {
-                            //高量显示
-                            paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
+                            //高亮显示
+                            paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
                         } else {
                             //
-                            paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
+                            paginationHtml += '<li><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
                         }
                     }
-                    paginageHtml += '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>'
-                        + '</a></li>'
+                    paginationHtml +=
+                        '<li id="next"><a href="javascript:paginationMethod('+(currentPage+1)+','+limit+')" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+                        '</a></li>'
                 } else {
                     //总页数大于5页,即显示5页;
-                    paginageHtml += '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>'
-                        + '</a></li>'
-                    if (currentPage <= 5) {
+                    paginationHtml +=
+                        '<li id="pre"><a href="javascript:paginationMethod('+(currentPage-1)+','+limit+')" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+                        '</a></li>'
+                    if (currentPage < 5) {
                         for (var i = 0; i < 5; i++) {
                             if (currentPage == (i + 1)) {
-                                //高量显示
-                                paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
                             } else {
                                 //
-                                paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i+1)+','+limit+')">' + (i + 1) + '</a></li>';
                             }
                         }
-                    } else if (currentPage < pageCount - 4) {
+                    } else if (currentPage < (pageCount - 4)&&currentPage>=5) {
                         //在中间显示5条
                         //随机生成1-5的整数
-                        const randonInt = Math.floor(Math.random() * (1 - 5) + 5);
+                        const randomInt = Math.floor(Math.random() * (1 - 5) + 5);
                         //写个5次循环
-                        for (var i = currentPage - randonInt; i < (currentPage - randonInt) + 5; i++) {
+                        for (var i = currentPage - randomInt; i < (currentPage - randomInt) + 5; i++) {
                             if (currentPage == i) {
-                                //高量显示
-                                paginageHtml += '<li class="active"><a href="#">' + (i) + '</a></li>';
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i)+','+limit+')">' + (i) + '</a></li>';
                             } else {
                                 //
-                                paginageHtml += '<li><a href="#">' + (i) + '</a></li>';
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i)+','+limit+')">' + (i) + '</a></li>';
                             }
                         }
                     } else {
                         //currentPage在最后5页的范畴里
                         for (var i = pageCount - 4; i <= pageCount; i++) {
                             if (currentPage == i) {
-                                //高量显示
-                                paginageHtml += '<li class="active"><a href="#">' + i + '</a></li>';
+                                //高亮显示
+                                paginationHtml += '<li class="active"><a href="javascript:paginationMethod('+(i)+','+limit+')">' + i + '</a></li>';
                             } else {
                                 //
-                                paginageHtml += '<li><a href="#">' + i + '</a></li>';
+                                paginationHtml += '<li><a href="javascript:paginationMethod('+(i)+','+limit+')">' + i + '</a></li>';
                             }
                         }
                     }
+                    //添加尾页
+                    paginationHtml +=
+                        '<li id="next"><a href="javascript:paginationMethod('+(currentPage+1)+','+limit+')" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+                        '</a></li>'
                 }
-                //添加尾页
-                paginageHtml += '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>'
-                    + '</a></li>'
+
+                //添加 标签结束标记
+                paginationHtml += ' </ul></nav>'
+                //将分页的html添加到div中
+                $('#page').html(paginationHtml)
                 //在首页的 时候,限制上一页点击
                 if (currentPage == 1) {
                     $('#pre').addClass('disabled')
@@ -165,113 +309,130 @@
             }
         })
     }
-    //获取成绩分页信息
-    $.get("/query_true_one", {
-        offsetIndex: 0,
-        limitIndex: 6
-    }, function (result) {
-        console.log(result);
-        if (result.code == 0) {
-            //存在输入
-            let tableHtml = '<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
-            // 获取当前页查询到的数据
-            const pageSize = result.data.rows.length;
-            //通过循环来追加html
-            for (var i = 0; i < pageSize; i++) {
-                tableHtml += '<tr><td>' + (i + 1) + '</td><td>' + result.data.rows[i].stu_name + '</td><td>' + result.data.rows[i].subject_name + '</td><td>' + result.data.rows[i].subject_score + '</td></tr>'
-            }
-            //循环完成
-            tableHtml += '</table>'
-            console.log(tableHtml)
-            //追加到表中
-            $('#my_table').html(tableHtml);
-            //通过循环注入分页
-            let paginageHtml = '<nav aria-label="Page navigation"><ul class="pagination">'
-            // 获取总的数据量
-            const allCount = resutl.data.total;
-            //一页展现的数据为
-            var limitIndex = 20;
-            //总共分页的数目
-            const pageCount = allCount % limitIndex == 0 ? allCount / limitIndex : Math.ceil(allCount / limitIndex);
-            //定义当前页面
-            var currentPage = 1;
-            // 当前页需要小于总页数,防止越界查询
-            currentPage = currentPage <= pageCount ? currentPage : 1;
-            if (pageCount == 1) {
-                paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
-            } else if (pageCount < 5) {
-                //少于5也
-                paginageHtml += '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>'
-                    + '</a></li>'
-                for (var i = 0; i < pageCount; i++) {
-                    if (currentPage == (i + 1)) {
-                        //高量显示
-                        paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
-                    } else {
-                        //
-                        paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
-                    }
-                }
-                paginageHtml += '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>'
-                    + '</a></li>'
-            } else {
-                //总页数大于5页,即显示5页;
-                paginageHtml += '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>'
-                    + '</a></li>'
-                if (currentPage <= 5) {
-                    for (var i = 0; i < 5; i++) {
-                        if (currentPage == (i + 1)) {
-                            //高量显示
-                            paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
-                        } else {
-                            //
-                            paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
-                        }
-                    }
-                } else if (currentPage < pageCount - 4) {
-                    //在中间显示5条
-                    //随机生成1-5的整数
-                    const randonInt = Math.floor(Math.random() * (1 - 5) + 5);
-                    //写个5次循环
-                    for (var i = currentPage - randonInt; i < (currentPage - randonInt) + 5; i++) {
-                        if (currentPage == i) {
-                            //高量显示
-                            paginageHtml += '<li class="active"><a href="#">' + (i) + '</a></li>';
-                        } else {
-                            //
-                            paginageHtml += '<li><a href="#">' + (i) + '</a></li>';
-                        }
-                    }
-                } else {
-                    //currentPage在最后5页的范畴里
-                    for (var i = pageCount - 4; i <= pageCount; i++) {
-                        if (currentPage == i) {
-                            //高量显示
-                            paginageHtml += '<li class="active"><a href="#">' + i + '</a></li>';
-                        } else {
-                            //
-                            paginageHtml += '<li><a href="#">' + i + '</a></li>';
-                        }
-                    }
-                }
-            }
-            //添加尾页
-            paginageHtml += '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>'
-                + '</a></li>'
-            //在首页的 时候,限制上一页点击
-            if (currentPage == 1) {
-                $('#pre').addClass('disabled')
-            } else {
-                $('#pre').removeClass('disabled')
-            }
-            //当在尾页的时候,限制下一页点击
-            if (currentPage == pageCount) {
-                $('#next').addClass('disabled')
-            } else {
-                $('#next').removeClass('disabled')
-            }
-        }
-    })
+
+    //调用方法；
+    paginationMethod(1,6);
+    // //获取成绩分页信息
+    // $.get("/query_true_one", {
+    //     offsetIndex: 0,
+    //     limitIndex: 6
+    // }, function (result) {
+    //     console.log(result);
+    //     if (result.code == 0) {
+    //         //存在输入
+    //         let tableHtml =
+    //             '<thead style="background: #86a897"><th class="text-center">学生序号</th><th class="text-center">学生姓名</th><th class="text-center">考试科目</th><th class="text-center">考试成绩</th></thead>';
+    //         // 获取当前页查询到的数据
+    //         const pageSize = result.data.rows.length;
+    //         //通过循环来追加html
+    //         for (var i = 0; i < pageSize; i++) {
+    //             tableHtml += '<tr><td>' + (i + 1) + '</td><td>' + result.data.rows[i].stu_name + '</td><td>' +
+    //                 result.data.rows[i].subject_name + '</td><td>' + result.data.rows[i].subject_score +
+    //                 '</td></tr>'
+    //         }
+    //         //循环完成
+    //         tableHtml += '</table>'
+    //         console.log(tableHtml)
+    //         //追加到表中
+    //         $('#my_table').html(tableHtml);
+    //         //通过循环注入分页
+    //         let paginageHtml = '<nav aria-label="Page navigation"><ul class="pagination">'
+    //         // 获取总的数据量
+    //         const allCount = result.data.total;
+    //         //一页展现的数据为
+    //         var limitIndex = 20;
+    //         //总共分页的数目
+    //         const pageCount = allCount % limitIndex == 0 ? allCount / limitIndex : Math.ceil(allCount /
+    //             limitIndex);
+    //         //定义当前页面
+    //         var currentPage = 1;
+    //         // 当前页需要小于总页数,防止越界查询
+    //         currentPage = currentPage <= pageCount ? currentPage : 1;
+
+    //         if (pageCount == 1) {
+    //             paginageHtml += '<li class="active"><a href="#">' + 1 + '</a></li>';
+    //         } else if (pageCount < 5) {
+    //             paginageHtml +=
+    //                 '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+    //                 '</a></li>'
+    //             //少于5也
+    //             for (var i = 0; i < pageCount; i++) {
+    //                 if (currentPage == (i + 1)) {
+    //                     //高量显示
+    //                     paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
+    //                 } else {
+    //                     //
+    //                     paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
+    //                 }
+    //             }
+    //             paginageHtml +=
+    //                 '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+    //                 '</a></li>'
+    //         } else {
+    //             //总页数大于5页,即显示5页;
+    //             paginageHtml +=
+    //                 '<li id="pre"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span>' +
+    //                 '</a></li>'
+    //             if (currentPage <= 5) {
+    //                 for (var i = 0; i < 5; i++) {
+    //                     if (currentPage == (i + 1)) {
+    //                         //高量显示
+    //                         paginageHtml += '<li class="active"><a href="#">' + (i + 1) + '</a></li>';
+    //                     } else {
+    //                         //
+    //                         paginageHtml += '<li><a href="#">' + (i + 1) + '</a></li>';
+    //                     }
+    //                 }
+    //             } else if (currentPage < pageCount - 4) {
+    //                 //在中间显示5条
+    //                 //随机生成1-5的整数
+    //                 const randomInt = Math.floor(Math.random() * (1 - 5) + 5);
+    //                 //写个5次循环
+    //                 for (var i = currentPage - randomInt; i < (currentPage - randomInt) + 5; i++) {
+    //                     if (currentPage == i) {
+    //                         //高量显示
+    //                         paginageHtml += '<li class="active"><a href="#">' + (i) + '</a></li>';
+    //                     } else {
+    //                         //
+    //                         paginageHtml += '<li><a href="#">' + (i) + '</a></li>';
+    //                     }
+    //                 }
+    //             } else {
+    //                 //currentPage在最后5页的范畴里
+    //                 for (var i = pageCount - 4; i <= pageCount; i++) {
+    //                     if (currentPage == i) {
+    //                         //高量显示
+    //                         paginageHtml += '<li class="active"><a href="#">' + i + '</a></li>';
+    //                     } else {
+    //                         //
+    //                         paginageHtml += '<li><a href="#">' + i + '</a></li>';
+    //                     }
+    //                 }
+    //             }
+    //             //添加尾页
+    //             paginageHtml +=
+    //                 '<li id="next"<a href="#" aria-label="Next"><span aria-hidden="true">&raquo;</span>' +
+    //                 '</a></li>'
+    //         }
+
+    //         //添加 标签结束标记
+    //         paginageHtml += ' </ul></nav>'
+    //         //将分页的html添加到div中
+    //         $('#page').html(paginageHtml)
+    //         //在首页的 时候,限制上一页点击
+    //         if (currentPage == 1) {
+    //             $('#pre').addClass('disabled')
+    //         } else {
+    //             $('#pre').removeClass('disabled')
+    //         }
+    //         //当在尾页的时候,限制下一页点击
+    //         if (currentPage == pageCount) {
+    //             $('#next').addClass('disabled')
+    //         } else {
+    //             $('#next').removeClass('disabled')
+    //         }
+    //     }
+    // })
 </script>
 
 </html>
